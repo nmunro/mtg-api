@@ -1,0 +1,78 @@
+(defpackage mtg-api/cards
+  (:use :cl)
+  (:export #:fetch
+           #:make-cards-api
+           #:name)
+  (:shadow :type :id :set :number :random))
+(in-package :mtg-api/cards)
+
+(defclass cards-api-v1 (mtg-api/base:api-v1)
+  ((resource       :initarg :resource       :initform "cards" :reader resource)
+   (pageSize       :initarg :page-size      :initform "100"   :reader pageSize)
+   (page           :initarg :page           :initform "0"     :reader page)
+   (name           :initarg :name           :initform nil     :reader name)
+   (layout         :initarg :layout         :initform nil     :reader layout)
+   (cmc            :initarg :cmc            :initform nil     :reader cmc)
+   (colors         :initarg :colors         :initform nil     :reader colors)
+   (colorIdentity  :initarg :color-identity :initform nil     :reader colorIdentity)
+   (type           :initarg :type           :initform nil     :reader type)
+   (supertypes     :initarg :supertypes     :initform nil     :reader supertypes)
+   (types          :initarg :types          :initform nil     :reader types)
+   (subtypes       :initarg :subtypes       :initform nil     :reader subtypes)
+   (rarity         :initarg :rarity         :initform nil     :reader rarity)
+   (set            :initarg :set            :initform nil     :reader set)
+   (setName        :initarg :setname        :initform nil     :reader setName)
+   (text           :initarg :text           :initform nil     :reader text)
+   (flavor         :initarg :flavor         :initform nil     :reader flavor)
+   (artist         :initarg :artist         :initform nil     :reader artist)
+   (number         :initarg :number         :initform nil     :reader number)
+   (power          :initarg :power          :initform nil     :reader power)
+   (toughness      :initarg :toughness      :initform nil     :reader toughness)
+   (loyalty        :initarg :loyalty        :initform nil     :reader loyalty)
+   (language       :initarg :language       :initform nil     :reader language)
+   (gameFormat     :initarg :game-format    :initform nil     :reader gameFormat)
+   (legality       :initarg :legality       :initform nil     :reader legality)
+   (orderBy        :initarg :order-by       :initform nil     :reader orderBy)
+   (random         :initarg :random         :initform nil     :reader random)
+   (contains       :initarg :contains       :initform nil     :reader contains)
+   (id             :initarg :id             :initform nil     :reader id)
+   (multiverseid   :initarg :multiverse-id  :initform nil     :reader multiverseid))
+  (:documentation "Represents a card using V1 of the API"))
+
+(defmethod print-object ((object cards-api-v1) stream)
+  (print-unreadable-object (object stream)
+    (format stream "~A" (resource object))))
+
+(defclass cards-api (cards-api-v1)
+  ()
+  (:documentation "A convenience class to represent the current version of the API"))
+
+(defmethod args ((obj cards-api))
+  (labels ((remove-slots (slot)
+             (member slot '(url resource)))
+
+           (canonicalize-slot (slot)
+             (cond
+               ((eq slot 'PAGESIZE) "pageSize")
+               ((eq slot 'COLORIDENTITY) "colorIdentity")
+               ((eq slot 'SETNAME) "setName")
+               ((eq slot 'GAMEFORMAT) "gameFormat")
+               ((eq slot 'ORDERBY) "orderBy")
+               (t (string-downcase slot))))
+
+           (make-query-param (slot)
+            (when (slot-value obj slot)
+             (format nil "~A=~A" (canonicalize-slot slot) (do-urlencode:urlencode (slot-value obj slot)))))
+
+           (make-query-params (slots)
+            (format nil "?~{~A~^&~}" (remove-if #'null (mapcar #'make-query-param slots)))))
+
+    (let ((slots (mapcar #'closer-mop:slot-definition-name (closer-mop:class-direct-slots (class-of (make-instance 'cards-api-v1))))))
+      (make-query-params (remove-if #'remove-slots slots)))))
+
+(defun make-cards-api (&rest args)
+  (apply #'make-instance `(cards-api ,@(alexandria:flatten args))))
+
+(defmethod fetch ((obj cards-api))
+  (let ((url (format nil "~A/~A~A" (mtg-api/base:url obj) (resource obj) (args obj))))
+    (mapcar #'mtg-api/card:make-card (gethash "cards" (jonathan:parse (dexador:get url) :as :hash-table)))))
