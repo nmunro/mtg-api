@@ -2,6 +2,20 @@
   (:use :cl)
   (:export #:make-set-api
            #:make-set
+           #:code
+           #:gatherer-code
+           #:old-code
+           #:expansion
+           #:name
+           #:type
+           #:border
+           #:mkm-id
+           #:booster
+           #:mkm-name
+           #:release-date
+           #:online-only
+           #:magic-cards-info-code
+           #:block
            #:fetch)
   (:shadow :set :type :block))
 (in-package :mtg-api/set)
@@ -35,7 +49,7 @@
    (booster               :initarg :booster               :initform nil :reader booster)
    (mkm-name              :initarg :mkm-name              :initform ""  :reader mkm-name)
    (release-date          :initarg :release-date          :initform ""  :reader release-date)
-   (onlineOnly            :initarg :online-only           :initform nil :reader onlineOnly)
+   (onlineOnly            :initarg :online-only           :initform nil :reader online-only)
    (magic-cards-info-code :initarg :magic-cards-info-code :initform ""  :reader magic-cards-info-code)
    (block                 :initarg :block                 :initform ""  :reader block))
   (:documentation "Represents a 'set' as returned from the /set resource of the API"))
